@@ -52,5 +52,20 @@
         }
       ]
     }
+  ],
+  "jsonSources": [
+    {
+      "url": "https://meowcat.me/vpn/subscription",
+      "selections": [
+        {
+          "nameIncludes": "Авто-выбор | Домашние",
+          "group": "normal"
+        },
+        {
+          "nameIncludes": "Авто-выбор | Белые списки",
+          "group": "whitelist"
+        }
+      ]
+    }
   ]
 }
