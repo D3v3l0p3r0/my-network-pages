@@ -3,32 +3,54 @@
   "sources": [
     {
       "name": "Epodonios public collection",
-      "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt"
+      "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt",
+      "group": "normal"
     },
     {
       "name": "igareck",
-      "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-checked.txt"
+      "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-checked.txt",
+      "group": "whitelist"
     },
     {
       "name": "zieng2",
-      "url": "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt"
+      "url": "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt",
+      "group": "whitelist"
     },
     {
       "name": "zieng2",
-      "url": "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt"
+      "url": "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt",
+      "group": "whitelist"
     },
     {
       "name": "igareck",
-      "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-SNI-RU-all.txt"
+      "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-SNI-RU-all.txt",
+      "group": "whitelist"
     },
     {
       "name": "igareck",
-      "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt"
+      "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt",
+      "group": "whitelist"
     }
   ],
   "testUrl": "https://www.gstatic.com/generate_204",
   "maxSourceBytes": 4000000,
-  "maxCandidates": 100,
+  "maxCandidates": 160,
   "concurrency": 4,
-  "maxPublished": 12
+  "maxPublished": 6,
+  "manifests": [
+    {
+      "url": "https://raw.githubusercontent.com/kort0881/vpn-checker-backend/main/checked/subscriptions_list.txt",
+      "allowedPrefix": "https://raw.githubusercontent.com/kort0881/vpn-checker-backend/main/checked/",
+      "selections": [
+        {
+          "category": "EUROPE (FAST)",
+          "group": "normal"
+        },
+        {
+          "category": "RUSSIA (FAST)",
+          "group": "whitelist"
+        }
+      ]
+    }
+  ]
 }

@@ -7,6 +7,7 @@ import {randomInt} from 'node:crypto';
 import {spawn,execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {extract,profile,identity} from './core.mjs';
+import {GROUPS,parseManifest,groupedProfile} from './groups.mjs';
 const exec=promisify(execFile), settings=JSON.parse(await fs.readFile('config.json','utf8'));
 const dry=process.argv.includes('--dry-run'), xray=process.env.XRAY_BIN||'xray';
 async function download(url) {
@@ -48,23 +49,30 @@ async function check(p) {
   }
 }
 const candidates=new Map();let failures=0;
-for(const s of settings.sources) {
-  try{for(const uri of extract(await download(s.url))){try{const p=profile(uri);const k=identity(p);if(!candidates.has(k)&&candidates.size<10000)candidates.set(k,{uri,p});}catch{}}}
-  catch {failures++;}
+const sources=[...settings.sources];
+for(const manifest of settings.manifests||[]){try{const found=parseManifest(await download(manifest.url),manifest.selections);for(const s of found){if(!s.url.startsWith(manifest.allowedPrefix))continue;sources.push(s)}}catch{failures++}}
+for(const s of sources) {
+ try{for(const uri of extract(await download(s.url))){try{const p=profile(uri),k=identity(p);if(!candidates.has(k)&&candidates.size<10000)candidates.set(k,{uri,p,groups:[]});const item=candidates.get(k);if(item&&!item.groups.includes(s.group||'normal'))item.groups.push(s.group||'normal');}catch{}}}catch{failures++}
 }
-console.log(JSON.stringify({sources:settings.sources.length,sourceFailures:failures,candidates:candidates.size,dryRun:dry}));
+console.log(JSON.stringify({sources:sources.length,sourceFailures:failures,candidates:candidates.size,dryRun:dry}));
 if(dry)process.exit(candidates.size?0:1);
 if(!candidates.size)throw Error('No candidates: existing publication preserved');
 await exec(xray,['version']);await exec('curl',['--version']);
-const pool=[...candidates.values()];
-for(let i=pool.length-1;i>0;i--){const j=randomInt(i+1);[pool[i],pool[j]]=[pool[j],pool[i]];}
-const queue=pool.slice(0,settings.maxCandidates), results=[];
+const selected=new Map(),budget=Math.max(1,Math.floor(settings.maxCandidates/GROUPS.length));
+for(const group of GROUPS){const pool=[...candidates.entries()].filter(([,x])=>x.groups.includes(group.id));for(let i=pool.length-1;i>0;i--){const j=randomInt(i+1);[pool[i],pool[j]]=[pool[j],pool[i]];}for(const [key,item]of pool.slice(0,budget))selected.set(key,item)}
+const queue=[...selected.values()],results=[];
 await Promise.all(Array.from({length:settings.concurrency},async()=>{while(queue.length){const item=queue.shift();const ms=await check(item.p);if(ms!==null)results.push({...item,ms});}}));
-results.sort((a,b)=>a.ms-b.ms);const best=results.slice(0,settings.maxPublished);
-if(!best.length)throw Error('No verified nodes: existing publication preserved');
+results.sort((a,b)=>a.ms-b.ms);
+if(!results.length)throw Error('No verified nodes: existing publication preserved');
+let previous={};try{previous=JSON.parse(await fs.readFile('dist/pools.json','utf8'))}catch{}
+const stamp=new Date().toISOString(),pools={},groups={};
+for(const group of GROUPS){const fresh=results.filter(x=>x.groups.includes(group.id)).slice(0,settings.maxPublished);const old=previous[group.id];pools[group.id]=fresh.length?{updatedAt:stamp,nodes:fresh}:old||{updatedAt:null,nodes:[]};groups[group.id]={name:group.name,count:pools[group.id].nodes.length,updatedAt:pools[group.id].updatedAt,lastAttemptSucceeded:fresh.length>0,whitelistVerifiedLocally:false};}
+const profiles=GROUPS.map(g=>groupedProfile(g,pools[g.id].nodes,settings.testUrl));
+const validation=await fs.mkdtemp(path.join(os.tmpdir(),'vpn-groups-'));
+try{for(let i=0;i<profiles.length;i++){const file=path.join(validation,i+'.json');await fs.writeFile(file,JSON.stringify(profiles[i]));await exec(xray,['run','-test','-c',file],{timeout:10000,maxBuffer:65536});}}finally{await fs.rm(validation,{recursive:true,force:true})}
 await fs.mkdir('dist',{recursive:true});
-const stamp=new Date().toISOString();
-await fs.writeFile('dist/happ.json',JSON.stringify(best.map(x=>({...x.p,remarks:x.p.remarks+' · '+x.ms+'ms'})),null,2));
-await fs.writeFile('dist/sub.txt',best.map(x=>x.uri).join('\n')+'\n');
-await fs.writeFile('dist/status.json',JSON.stringify({updatedAt:stamp,count:best.length,candidates:candidates.size,sourceFailures:failures,check:'HTTPS 204 through Xray; not a local ISP availability test'},null,2));
-console.log(JSON.stringify({verified:best.length,updatedAt:stamp}));
+await fs.writeFile('dist/happ.json',JSON.stringify(profiles,null,2));
+await fs.writeFile('dist/pools.json',JSON.stringify(pools));
+await fs.writeFile('dist/sub.txt',GROUPS.flatMap(g=>pools[g.id].nodes.map(x=>x.uri)).join('\n')+'\n');
+await fs.writeFile('dist/status.json',JSON.stringify({updatedAt:stamp,count:GROUPS.reduce((n,g)=>n+groups[g.id].count,0),profileCount:2,groups,candidates:candidates.size,sourceFailures:failures,check:'HTTPS 204 through Xray; whitelist classification is source-declared, not verified from a restricted carrier'},null,2));
+console.log(JSON.stringify({profiles:2,groups,updatedAt:stamp}));
