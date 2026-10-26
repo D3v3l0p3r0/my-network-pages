@@ -1,0 +1,53 @@
+name: Update GitHub Pages subscriptions
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 */4 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: pages-subscriptions
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test
+      - name: Restore previous published subscription
+        run: |
+          mkdir -p dist
+          if git fetch origin gh-pages --depth=1; then
+            git archive FETCH_HEAD | tar -x -C dist
+          fi
+      - name: Download verified Xray release
+        run: |
+          curl --fail --location https://github.com/XTLS/Xray-core/releases/download/v26.10.21/Xray-linux-64.zip -o /tmp/xray.zip
+          echo "0eec3ed4163c273d8c8bf821f7d219e257921cf584aa3fb970715e458e631978  /tmp/xray.zip" | sha256sum -c -
+          mkdir -p /tmp/xray
+          unzip -q /tmp/xray.zip -d /tmp/xray
+          chmod +x /tmp/xray/xray
+      - name: Verify HTTPS through nodes
+        id: scan
+        continue-on-error: true
+        run: node collect.mjs
+        env:
+          XRAY_BIN: /tmp/xray/xray
+          XRAY_LOCATION_ASSET: /tmp/xray
+      - name: Build page with honest status
+        run: node build-site.mjs
+        env:
+          CHECK_SUCCEEDED: ${{ steps.scan.outcome == 'success' }}
+      - name: Publish Pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: dist
+          publish_branch: gh-pages
+          force_orphan: true
