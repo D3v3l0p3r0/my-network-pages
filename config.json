@@ -8,6 +8,22 @@
     {
       "name": "igareck",
       "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-checked.txt"
+    },
+    {
+      "name": "zieng2",
+      "url": "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt"
+    },
+    {
+      "name": "zieng2",
+      "url": "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt"
+    },
+    {
+      "name": "igareck",
+      "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-SNI-RU-all.txt"
+    },
+    {
+      "name": "igareck",
+      "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt"
     }
   ],
   "testUrl": "https://www.gstatic.com/generate_204",
