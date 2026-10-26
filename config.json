@@ -34,9 +34,9 @@
   ],
   "testUrl": "https://www.gstatic.com/generate_204",
   "maxSourceBytes": 4000000,
-  "maxCandidates": 160,
+  "maxCandidates": 400,
   "concurrency": 4,
-  "maxPublished": 6,
+  "maxPublished": 15,
   "manifests": [
     {
       "url": "https://raw.githubusercontent.com/kort0881/vpn-checker-backend/main/checked/subscriptions_list.txt",
@@ -48,7 +48,7 @@
         },
         {
           "category": "RUSSIA (FAST)",
-          "group": "whitelist"
+          "group": "normal"
         }
       ]
     }
