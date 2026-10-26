@@ -1,0 +1,12 @@
+{
+  "name": "independent-vpn",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "collect": "node collect.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

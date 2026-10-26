@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+const exec=promisify(execFile),script=path.resolve('build-site.mjs');
+test('first failed collection produces honest empty status without subscription',async()=>{const d=await fs.mkdtemp(path.join(os.tmpdir(),'pages-test-'));try{await fs.mkdir(path.join(d,'site'));await fs.writeFile(path.join(d,'index.template.html'),'test');await exec(process.execPath,[script],{cwd:d,env:{...process.env,CHECK_SUCCEEDED:'false'}});const s=JSON.parse(await fs.readFile(path.join(d,'dist/status.json')));assert.equal(s.count,0);assert.equal(s.lastAttemptSucceeded,false);await assert.rejects(fs.stat(path.join(d,'dist/happ.json')));}finally{await fs.rm(d,{recursive:true,force:true})}});
+test('failed refresh preserves last good subscription and timestamp',async()=>{const d=await fs.mkdtemp(path.join(os.tmpdir(),'pages-test-'));try{await fs.mkdir(path.join(d,'site'));await fs.mkdir(path.join(d,'dist'));await fs.writeFile(path.join(d,'index.template.html'),'test');await fs.writeFile(path.join(d,'dist/status.json'),JSON.stringify({count:2,updatedAt:'2026-01-01T00:00:00Z'}));await fs.writeFile(path.join(d,'dist/happ.json'),'[{}]');await exec(process.execPath,[script],{cwd:d,env:{...process.env,CHECK_SUCCEEDED:'false'}});const s=JSON.parse(await fs.readFile(path.join(d,'dist/status.json')));assert.equal(s.count,2);assert.equal(s.updatedAt,'2026-01-01T00:00:00Z');assert.equal(s.lastAttemptSucceeded,false);assert.equal(await fs.readFile(path.join(d,'dist/happ.json'),'utf8'),'[{}]');}finally{await fs.rm(d,{recursive:true,force:true})}});

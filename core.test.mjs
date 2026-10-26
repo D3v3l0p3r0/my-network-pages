@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {extract,profile,identity} from './core.mjs';
+const id='11111111-1111-4111-8111-111111111111';
+const uri='vless://'+id+'@example.com:443?type=ws&security=tls&sni=example.com&path=%2Ftunnel#Test';
+test('plain and base64 subscriptions',()=>{assert.deepEqual(extract(uri),[uri]);assert.deepEqual(extract(Buffer.from(uri).toString('base64')),[uri]);});
+test('TLS and WS conversion',()=>{const p=profile(uri);assert.equal(p.outbounds[0].streamSettings.wsSettings.path,'/tunnel');assert.equal(p.outbounds[0].settings.vnext[0].users[0].id,id);assert.equal(p.outbounds[0].streamSettings.tlsSettings.allowInsecure,false);});
+test('node deduplication',()=>assert.equal(identity(profile(uri)),identity(profile(uri.replace('#Test','#Other')))));
+test('unsupported transports and incomplete Reality rejected',()=>{assert.throws(()=>profile(uri.replace('type=ws','type=kcp')));assert.throws(()=>profile(uri.replace('security=tls','security=reality')));});
+test('IP check websites have no direct bypass',()=>{assert.equal(profile(uri).routing.rules.some(r=>r.outboundTag==='direct'),false);});

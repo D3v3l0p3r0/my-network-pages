@@ -1,0 +1,18 @@
+{
+  "title": "Моя сеть",
+  "sources": [
+    {
+      "name": "Epodonios public collection",
+      "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt"
+    },
+    {
+      "name": "igareck",
+      "url": "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-checked.txt"
+    }
+  ],
+  "testUrl": "https://www.gstatic.com/generate_204",
+  "maxSourceBytes": 4000000,
+  "maxCandidates": 100,
+  "concurrency": 4,
+  "maxPublished": 12
+}
