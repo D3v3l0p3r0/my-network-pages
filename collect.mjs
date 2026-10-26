@@ -43,6 +43,7 @@ async function check(p) {
     const start=Date.now();
     const {stdout}=await exec('curl',['--silent','--show-error','--fail','--noproxy','','--proxy','http://127.0.0.1:'+port,'--connect-timeout','5','--max-time','10','--output',path.join(dir,'body'),'--write-out','%{http_code}',settings.testUrl],{timeout:12000,maxBuffer:1024});
     if(stdout.trim()!=='204')return null;
+    if(settings.youtubeTestUrl){const yt=await exec('curl',['--silent','--show-error','--head','--noproxy','','--proxy','http://127.0.0.1:'+port,'--connect-timeout','5','--max-time','8','--output',path.join(dir,'youtube-headers'),'--write-out','%{http_code}',settings.youtubeTestUrl],{timeout:10000,maxBuffer:1024});if(!/^[23]\d\d$/.test(yt.stdout.trim()))return null;}
     return Date.now()-start;
   } catch {return null;} finally {
     if(child&&child.exitCode===null){await new Promise(resolve=>{child.once('exit',resolve);child.kill();setTimeout(()=>{child.kill('SIGKILL');resolve()},1000).unref();});}
@@ -50,26 +51,27 @@ async function check(p) {
   }
 }
 const candidates=new Map();let failures=0;
-function addCandidate(item,group){const k=identity(item.p);if(!candidates.has(k)&&candidates.size<10000)candidates.set(k,{...item,groups:[]});const found=candidates.get(k);if(found){if(!found.groups.includes(group))found.groups.push(group);if(item.preferred)found.preferred=true}}
+function addCandidate(item,group){const k=identity(item.p);if(!candidates.has(k)&&candidates.size<10000)candidates.set(k,{...item,groups:[]});const found=candidates.get(k);if(found){if(!found.groups.includes(group))found.groups.push(group);if(item.preferred)found.preferred=true;if(item.locallyTested)found.locallyTested=true}}
 for(const source of settings.jsonSources||[]){try{for(const item of jsonCandidates(await download(source.url),source.selections))addCandidate(item,item.group)}catch{failures++}}
 const sources=[...settings.sources];
 for(const manifest of settings.manifests||[]){try{const found=parseManifest(await download(manifest.url),manifest.selections);for(const s of found){if(!s.url.startsWith(manifest.allowedPrefix))continue;sources.push(s)}}catch{failures++}}
 for(const s of sources) {
- try{for(const uri of extract(await download(s.url))){try{const p=profile(uri);addCandidate({uri,p},s.group||'normal');}catch{}}}catch{failures++}
+ try{for(const uri of extract(await download(s.url))){try{const p=profile(uri);addCandidate({uri,p,locallyTested:!!s.locallyTested},s.group||'normal');}catch{}}}catch{failures++}
 }
 console.log(JSON.stringify({sources:sources.length,sourceFailures:failures,candidates:candidates.size,dryRun:dry}));
 if(dry)process.exit(candidates.size?0:1);
 if(!candidates.size)throw Error('No candidates: existing publication preserved');
 await exec(xray,['version']);await exec('curl',['--version']);
 const selected=new Map(),budget=Math.max(1,Math.floor(settings.maxCandidates/GROUPS.length));
-for(const group of GROUPS){const pool=[...candidates.entries()].filter(([,x])=>x.groups.includes(group.id));for(let i=pool.length-1;i>0;i--){const j=randomInt(i+1);[pool[i],pool[j]]=[pool[j],pool[i]];}pool.sort((a,b)=>Number(!!b[1].preferred)-Number(!!a[1].preferred));for(const [key,item]of pool.slice(0,budget))selected.set(key,item)}
+for(const group of GROUPS){const pool=[...candidates.entries()].filter(([,x])=>x.groups.includes(group.id));for(let i=pool.length-1;i>0;i--){const j=randomInt(i+1);[pool[i],pool[j]]=[pool[j],pool[i]];}pool.sort((a,b)=>(2*Number(!!b[1].locallyTested)+Number(!!b[1].preferred))-(2*Number(!!a[1].locallyTested)+Number(!!a[1].preferred)));for(const [key,item]of pool.slice(0,budget))selected.set(key,item)}
 const queue=[...selected.values()],results=[];
 await Promise.all(Array.from({length:settings.concurrency},async()=>{while(queue.length){const item=queue.shift();const ms=await check(item.p);if(ms!==null)results.push({...item,ms});}}));
 results.sort((a,b)=>a.ms-b.ms);
 if(!results.length)throw Error('No verified nodes: existing publication preserved');
 let previous={};try{previous=JSON.parse(await fs.readFile('dist/pools.json','utf8'))}catch{}
+if(!(settings.jsonSources||[]).length)for(const g of GROUPS)if(previous[g.id])previous[g.id].nodes=previous[g.id].nodes.filter(n=>!n.preferred);
 const stamp=new Date().toISOString(),pools={},groups={};
-for(const group of GROUPS){const available=results.filter(x=>x.groups.includes(group.id));const reserve=available.filter(x=>x.preferred).slice(0,Math.min(6,settings.maxPublished));const fresh=[...reserve,...available.filter(x=>!reserve.includes(x))].slice(0,settings.maxPublished);const old=previous[group.id];pools[group.id]=fresh.length?{updatedAt:stamp,nodes:fresh}:old||{updatedAt:null,nodes:[]};groups[group.id]={name:group.name,count:pools[group.id].nodes.length,updatedAt:pools[group.id].updatedAt,lastAttemptSucceeded:fresh.length>0,whitelistVerifiedLocally:false};}
+for(const group of GROUPS){const available=results.filter(x=>x.groups.includes(group.id));const reserve=available.filter(x=>x.locallyTested||x.preferred).sort((a,b)=>Number(!!b.locallyTested)-Number(!!a.locallyTested)).slice(0,Math.min(6,settings.maxPublished));const fresh=[...reserve,...available.filter(x=>!reserve.includes(x))].slice(0,settings.maxPublished);const old=previous[group.id];pools[group.id]=fresh.length?{updatedAt:stamp,nodes:fresh}:old||{updatedAt:null,nodes:[]};groups[group.id]={name:group.name,count:pools[group.id].nodes.length,updatedAt:pools[group.id].updatedAt,lastAttemptSucceeded:fresh.length>0,whitelistVerifiedLocally:false};}
 const profiles=GROUPS.map(g=>groupedProfile(g,pools[g.id].nodes,settings.testUrl));
 const validation=await fs.mkdtemp(path.join(os.tmpdir(),'vpn-groups-'));
 try{for(let i=0;i<profiles.length;i++){const file=path.join(validation,i+'.json');await fs.writeFile(file,JSON.stringify(profiles[i]));await exec(xray,['run','-test','-c',file],{timeout:10000,maxBuffer:65536});}}finally{await fs.rm(validation,{recursive:true,force:true})}

@@ -2,6 +2,18 @@
   "title": "Моя сеть",
   "sources": [
     {
+      "name": "Local check whitelist",
+      "url": "https://raw.githubusercontent.com/D3v3l0p3r0/my-network-pages/main/locally-checked-whitelist.txt",
+      "group": "whitelist",
+      "locallyTested": true
+    },
+    {
+      "name": "Local check normal",
+      "url": "https://raw.githubusercontent.com/D3v3l0p3r0/my-network-pages/main/locally-checked-normal.txt",
+      "group": "normal",
+      "locallyTested": true
+    },
+    {
       "name": "Epodonios public collection",
       "url": "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt",
       "group": "normal"
@@ -53,19 +65,5 @@
       ]
     }
   ],
-  "jsonSources": [
-    {
-      "url": "https://meowcat.me/vpn/subscription",
-      "selections": [
-        {
-          "nameIncludes": "Авто-выбор | Домашние",
-          "group": "normal"
-        },
-        {
-          "nameIncludes": "Авто-выбор | Белые списки",
-          "group": "whitelist"
-        }
-      ]
-    }
-  ]
+  "youtubeTestUrl": "https://www.youtube.com/"
 }
