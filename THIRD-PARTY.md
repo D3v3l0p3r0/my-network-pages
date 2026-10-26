@@ -5,3 +5,5 @@
 Оригинал: https://github.com/kort0881/vpn-checker-backend/blob/main/main.py
 
 Текст лицензии: LICENSE-MPL-2.0.txt. Снимок списка опубликован в исходном виде JSON с атрибуцией; исполняемый JS-код сборщика написан отдельно. Проверка заменена на реальный HTTPS через Xray. Известное правило автора, заменяющее type=xhttp на type=http, не перенесено: это меняет транспорт.
+
+QR-коды: qrcode-generator 2.0.4, Kazuhiko Arase, MIT. Исходник qrcode.cjs, лицензия LICENSE-QR.txt. Источник https://www.npmjs.com/package/qrcode-generator/v/2.0.4 . Проверена SHA-512 целостность пакета.
