@@ -2,19 +2,13 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import net from 'node:net';
-import dns from 'node:dns/promises';
+import {publicHost} from './network.mjs';
 import {randomInt} from 'node:crypto';
 import {spawn,execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {extract,profile,identity} from './core.mjs';
 const exec=promisify(execFile), settings=JSON.parse(await fs.readFile('config.json','utf8'));
 const dry=process.argv.includes('--dry-run'), xray=process.env.XRAY_BIN||'xray';
-function publicIP(ip) {
-  if(ip.includes(':')) return false; // Conservative initial version: IPv4 only.
-  const n=ip.split('.').map(Number), a=n[0],b=n[1];
-  return !(a===0||a===10||a===127||a>=224||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&(b===168||b===0))||(a===100&&b>=64&&b<=127)||(a===198&&(b===18||b===19)));
-}
-async function publicHost(host) {const ips=await dns.lookup(host,{all:true});return ips.length>0&&ips.every(x=>publicIP(x.address));}
 async function download(url) {
   for(let i=0;i<5;i++) {
     const u=new URL(url); if(u.protocol!=='https:'||!(await publicHost(u.hostname))) throw Error('Source must use public HTTPS');
