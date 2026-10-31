@@ -1,0 +1,29 @@
+{
+  "updatedAt": "2026-10-31T18:41:07.681Z",
+  "count": 30,
+  "profileCount": 2,
+  "groups": {
+    "normal": {
+      "name": "Обычные",
+      "count": 15,
+      "updatedAt": "2026-10-31T18:41:07.681Z",
+      "lastAttemptSucceeded": true,
+      "whitelistVerifiedLocally": false
+    },
+    "whitelist": {
+      "name": "Белые списки",
+      "count": 15,
+      "updatedAt": "2026-10-31T18:41:07.681Z",
+      "lastAttemptSucceeded": true,
+      "whitelistVerifiedLocally": false
+    }
+  },
+  "candidates": 1231,
+  "sourceFailures": 1,
+  "check": "HTTPS 204 through Xray; whitelist classification is source-declared, not verified from a restricted carrier",
+  "lastBuildAt": "2026-10-31T18:41:07.863Z",
+  "lastAttemptAt": "2026-10-31T18:41:07.863Z",
+  "lastAttemptSucceeded": true,
+  "profileVersion": 3,
+  "profileBuiltAt": "2026-10-31T18:41:07.863Z"
+}
